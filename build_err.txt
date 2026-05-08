@@ -1,0 +1,16 @@
+﻿src/components/InputForm.tsx(1,19): error TS6133: 'Controller' is declared but its value is never read.
+src/components/InputForm.tsx(2,37): error TS6133: 'ImageIcon' is declared but its value is never read.
+src/components/InputForm.tsx(7,10): error TS1484: 'HenkatenRecord' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/InputForm.tsx(7,26): error TS1484: 'LineName' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/InputForm.tsx(7,26): error TS6133: 'LineName' is declared but its value is never read.
+src/components/InputForm.tsx(7,36): error TS1484: 'Category' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/InputForm.tsx(7,36): error TS6133: 'Category' is declared but its value is never read.
+src/components/InputForm.tsx(7,46): error TS1484: 'RiskLevel' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/InputForm.tsx(7,46): error TS6133: 'RiskLevel' is declared but its value is never read.
+src/components/InputForm.tsx(7,57): error TS1484: 'Departemen' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/InputForm.tsx(7,57): error TS6133: 'Departemen' is declared but its value is never read.
+src/components/InputForm.tsx(13,35): error TS6133: 'control' is declared but its value is never read.
+src/components/RekapData.tsx(4,42): error TS6133: 'Eye' is declared but its value is never read.
+src/components/RekapData.tsx(5,1): error TS6133: 'clsx' is declared but its value is never read.
+src/components/RekapData.tsx(6,10): error TS1484: 'RiskLevel' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/store/useStore.ts(3,10): error TS1484: 'HenkatenRecord' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
