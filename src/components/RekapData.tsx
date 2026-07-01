@@ -1,27 +1,49 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
-import { Search, Edit2, Printer, Trash2, Loader2 } from 'lucide-react';
-import type { RiskLevel, HenkatenRecord } from '../types';
+import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown } from 'lucide-react';
+import type { RiskLevel, HenkatenRecord, LineName, Category } from '../types';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const LINE_NAME_OPTIONS: LineName[] = ['Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing'];
+const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
+const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
 export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
   const { records, deleteRecord, isLoading } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
+  const [riskLevelFilter, setRiskLevelFilter] = useState<RiskLevel | ''>('');
+  const [selectedRecord, setSelectedRecord] = useState<HenkatenRecord | null>(null);
 
   const filteredRecords = useMemo(() => {
-    if (!searchTerm) return records;
     const lower = searchTerm.toLowerCase();
-    return records.filter(
-      (r) =>
+    return records.filter((r) => {
+      const matchesSearch =
+        !lower ||
         r.lineName.toLowerCase().includes(lower) ||
         r.category.toLowerCase().includes(lower) ||
         r.henkatenInfo.toLowerCase().includes(lower) ||
         r.tujuanHenkaten.toLowerCase().includes(lower) ||
         r.picName.toLowerCase().includes(lower) ||
-        r.departemen.toLowerCase().includes(lower)
-    );
-  }, [records, searchTerm]);
+        r.departemen.toLowerCase().includes(lower);
+      const matchesLineName = !lineNameFilter || r.lineName === lineNameFilter;
+      const matchesCategory = !categoryFilter || r.category === categoryFilter;
+      const matchesRiskLevel = !riskLevelFilter || r.riskLevel === riskLevelFilter;
+      return matchesSearch && matchesLineName && matchesCategory && matchesRiskLevel;
+    });
+  }, [records, searchTerm, lineNameFilter, categoryFilter, riskLevelFilter]);
+
+  const stats = useMemo(() => {
+    const total = filteredRecords.length;
+    const high = filteredRecords.filter((r) => r.riskLevel === 'High').length;
+    const medium = filteredRecords.filter((r) => r.riskLevel === 'Medium').length;
+    const low = filteredRecords.filter((r) => r.riskLevel === 'Low').length;
+    return { total, high, medium, low };
+  }, [filteredRecords]);
 
   const getRiskBadge = (level: RiskLevel | '') => {
     switch (level) {
@@ -82,6 +104,47 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
     printWindow.document.close();
   };
 
+  const handleExportPDF = () => {
+    if (filteredRecords.length === 0) {
+      toast.error('Tidak ada data untuk dieksport.');
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFontSize(14);
+    doc.text('Rekap Data Henkaten', 14, 12);
+    doc.setFontSize(9);
+    doc.text(`Diekspor pada ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 18);
+
+    autoTable(doc, {
+      startY: 22,
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [37, 99, 235] },
+      head: [[
+        'No', 'Line Name', 'Date Start', 'Date Finish', 'Category',
+        'Henkaten', 'Risk Level', 'Tujuan Henkaten', 'PIC Name',
+        'Departemen', 'Created By', 'Created At',
+      ]],
+      body: filteredRecords.map((r, i) => [
+        i + 1,
+        r.lineName,
+        format(new Date(r.dateStart), 'dd MMM yyyy'),
+        r.dateFinish ? format(new Date(r.dateFinish), 'dd MMM yyyy') : '-',
+        r.category,
+        r.henkatenInfo,
+        r.riskLevel,
+        r.tujuanHenkaten,
+        r.picName,
+        r.departemen,
+        r.createdBy,
+        format(new Date(r.createdAt), 'dd MMM yyyy HH:mm'),
+      ]),
+    });
+
+    doc.save(`henkaten_export_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`);
+    toast.success('PDF berhasil diekspor');
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
       try {
@@ -95,25 +158,111 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="flex items-center justify-between mb-6 gap-4">
         <h2 className="text-xl md:text-2xl font-bold text-slate-900 drop-shadow-sm">Rekap Data</h2>
-        
-        <div className="relative w-full md:w-64 max-w-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={16} className="text-slate-400" />
+        <button
+          onClick={handleExportPDF}
+          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
+        >
+          <FileDown size={16} />
+          <span>Export PDF</span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="w-10 h-10 shrink-0 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+            <ListChecks size={20} />
           </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm"
-            placeholder="Cari data..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div>
+            <p className="text-xs font-medium text-slate-500">Total Henkaten</p>
+            <p className="text-xl font-bold text-slate-900">{stats.total}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="w-10 h-10 shrink-0 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+            <AlertTriangle size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">High Risk</p>
+            <p className="text-xl font-bold text-slate-900">{stats.high}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="w-10 h-10 shrink-0 rounded-lg bg-yellow-100 text-yellow-700 flex items-center justify-center">
+            <AlertCircle size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Medium Risk</p>
+            <p className="text-xl font-bold text-slate-900">{stats.medium}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="w-10 h-10 shrink-0 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+            <CheckCircle2 size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Low Risk</p>
+            <p className="text-xl font-bold text-slate-900">{stats.low}</p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 relative">
-        <div className="overflow-x-auto h-full">
+      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <select
+            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            value={lineNameFilter}
+            onChange={(e) => setLineNameFilter(e.target.value as LineName | '')}
+          >
+            <option value="">Semua Line Name</option>
+            {LINE_NAME_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+
+          <select
+            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as Category | '')}
+          >
+            <option value="">Semua Category</option>
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+
+          <select
+            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            value={riskLevelFilter}
+            onChange={(e) => setRiskLevelFilter(e.target.value as RiskLevel | '')}
+          >
+            <option value="">Semua Risk Level</option>
+            {RISK_LEVEL_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+
+          <div className="relative w-full sm:w-64 max-w-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm"
+              placeholder="Cari data..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate h-[90vh]">
+        <div className="overflow-auto h-full">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs font-semibold text-white uppercase bg-blue-600 sticky top-0 z-10">
               <tr>
@@ -122,15 +271,15 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 <th scope="col" className="px-6 py-4">Date Start</th>
                 <th scope="col" className="px-6 py-4">Date Finish</th>
                 <th scope="col" className="px-6 py-4">Category</th>
-                <th scope="col" className="px-6 py-4 w-64 max-w-xs">Henkaten</th>
+                <th scope="col" className="px-6 py-4 max-w-[220px]">Henkaten</th>
                 <th scope="col" className="px-6 py-4 text-center">Risk Level</th>
-                <th scope="col" className="px-6 py-4 w-64 max-w-xs">Tujuan Henkaten</th>
+                <th scope="col" className="px-6 py-4 max-w-[220px]">Tujuan Henkaten</th>
                 <th scope="col" className="px-6 py-4">PIC Name</th>
                 <th scope="col" className="px-6 py-4">Departemen</th>
                 <th scope="col" className="px-6 py-4 text-center">Photo</th>
                 <th scope="col" className="px-6 py-4">Created By</th>
                 <th scope="col" className="px-6 py-4">Created At</th>
-                <th scope="col" className="px-6 py-4 text-center sticky right-0 bg-blue-700 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.1)]">Action</th>
+                <th scope="col" className="px-6 py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -151,17 +300,23 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 </tr>
               ) : (
                 filteredRecords.map((record, index) => (
-                  <tr key={record.id} className="hover:bg-slate-50 transition-colors">
+                  <tr
+                    key={record.id}
+                    onClick={() => setSelectedRecord(record)}
+                    className={`cursor-pointer transition-colors hover:bg-blue-100 ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-blue-50'
+                    }`}
+                  >
                     <td className="px-6 py-4 font-medium text-slate-900">{index + 1}</td>
                     <td className="px-6 py-4">{record.lineName}</td>
                     <td className="px-6 py-4">{format(new Date(record.dateStart), 'dd MMM yyyy')}</td>
                     <td className="px-6 py-4">{record.dateFinish ? format(new Date(record.dateFinish), 'dd MMM yyyy') : '-'}</td>
                     <td className="px-6 py-4">{record.category}</td>
-                    <td className="px-6 py-4 whitespace-normal min-w-[200px]">{record.henkatenInfo}</td>
+                    <td className="px-6 py-4 max-w-[220px] truncate" title={record.henkatenInfo}>{record.henkatenInfo}</td>
                     <td className="px-6 py-4 text-center">
                       {getRiskBadge(record.riskLevel)}
                     </td>
-                    <td className="px-6 py-4 whitespace-normal min-w-[200px]">{record.tujuanHenkaten}</td>
+                    <td className="px-6 py-4 max-w-[220px] truncate" title={record.tujuanHenkaten}>{record.tujuanHenkaten}</td>
                     <td className="px-6 py-4">{record.picName}</td>
                     <td className="px-6 py-4">{record.departemen}</td>
                     <td className="px-6 py-4 text-center">
@@ -175,16 +330,10 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                     </td>
                     <td className="px-6 py-4">{record.createdBy}</td>
                     <td className="px-6 py-4">{format(new Date(record.createdAt), 'dd MMM yyyy HH:mm')}</td>
-                    <td className="px-6 py-4 text-center sticky right-0 bg-white shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] group-hover:bg-slate-50">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button onClick={() => onEdit(record.id)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handlePrint(record)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Print">
-                          <Printer size={16} />
-                        </button>
+                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
                         <button onClick={() => handleDelete(record.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                          <Trash2 size={16} />
+                          <Trash2 size={16} className="opacity-60" />
                         </button>
                       </div>
                     </td>
@@ -195,6 +344,106 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
           </table>
         </div>
       </div>
+
+      {selectedRecord && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setSelectedRecord(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-blue-600 text-white rounded-t-xl">
+              <h3 className="text-lg font-semibold">Detail Henkaten</h3>
+              <button
+                onClick={() => setSelectedRecord(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                title="Tutup"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Line Name</p>
+                  <p className="text-sm text-slate-900">{selectedRecord.lineName}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Category</p>
+                  <p className="text-sm text-slate-900">{selectedRecord.category}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Date Start</p>
+                  <p className="text-sm text-slate-900">{format(new Date(selectedRecord.dateStart), 'dd MMM yyyy')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Date Finish</p>
+                  <p className="text-sm text-slate-900">{selectedRecord.dateFinish ? format(new Date(selectedRecord.dateFinish), 'dd MMM yyyy') : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">PIC Name</p>
+                  <p className="text-sm text-slate-900">{selectedRecord.picName}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Departemen</p>
+                  <p className="text-sm text-slate-900">{selectedRecord.departemen}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Risk Level</p>
+                  {getRiskBadge(selectedRecord.riskLevel)}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Henkaten</p>
+                <p className="text-sm text-slate-900 whitespace-pre-wrap">{selectedRecord.henkatenInfo}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Tujuan Henkaten</p>
+                <p className="text-sm text-slate-900 whitespace-pre-wrap">{selectedRecord.tujuanHenkaten}</p>
+              </div>
+
+              {selectedRecord.photo && (
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Photo</p>
+                  <img
+                    src={selectedRecord.photo}
+                    alt="Henkaten"
+                    className="max-w-full max-h-72 rounded-lg border border-slate-200 shadow-sm"
+                  />
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span>Dibuat oleh {selectedRecord.createdBy}</span>
+                <span>{format(new Date(selectedRecord.createdAt), 'dd MMM yyyy HH:mm')}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+              <button
+                onClick={() => handlePrint(selectedRecord)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <Printer size={16} /> Print
+              </button>
+              <button
+                onClick={() => {
+                  onEdit(selectedRecord.id);
+                  setSelectedRecord(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <Edit2 size={16} /> Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from './store/useStore';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { InputForm } from './components/InputForm';
 import { RekapData } from './components/RekapData';
 import { clsx } from 'clsx';
@@ -68,6 +69,8 @@ function App() {
         </div>
         
       </main>
+
+      <Footer />
     </div>
   );
 }
