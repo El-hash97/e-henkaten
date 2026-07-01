@@ -158,63 +158,67 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6 gap-4">
-        <h2 className="text-xl md:text-2xl font-bold text-slate-900 drop-shadow-sm">Rekap Data</h2>
+      <div className="flex flex-wrap items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 drop-shadow-sm">Rekap Data</h2>
         <button
           onClick={handleExportPDF}
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="flex items-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           <FileDown size={16} />
           <span>Export PDF</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-            <ListChecks size={20} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+            <ListChecks size={18} className="sm:hidden" />
+            <ListChecks size={20} className="hidden sm:block" />
           </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500">Total Henkaten</p>
-            <p className="text-xl font-bold text-slate-900">{stats.total}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
-            <AlertTriangle size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500">High Risk</p>
-            <p className="text-xl font-bold text-slate-900">{stats.high}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Total Henkaten</p>
+            <p className="text-lg sm:text-xl font-bold text-slate-900">{stats.total}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-lg bg-yellow-100 text-yellow-700 flex items-center justify-center">
-            <AlertCircle size={20} />
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+            <AlertTriangle size={18} className="sm:hidden" />
+            <AlertTriangle size={20} className="hidden sm:block" />
           </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500">Medium Risk</p>
-            <p className="text-xl font-bold text-slate-900">{stats.medium}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">High Risk</p>
+            <p className="text-lg sm:text-xl font-bold text-slate-900">{stats.high}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
-            <CheckCircle2 size={20} />
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-yellow-100 text-yellow-700 flex items-center justify-center">
+            <AlertCircle size={18} className="sm:hidden" />
+            <AlertCircle size={20} className="hidden sm:block" />
           </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500">Low Risk</p>
-            <p className="text-xl font-bold text-slate-900">{stats.low}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Medium Risk</p>
+            <p className="text-lg sm:text-xl font-bold text-slate-900">{stats.medium}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+            <CheckCircle2 size={18} className="sm:hidden" />
+            <CheckCircle2 size={20} className="hidden sm:block" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Low Risk</p>
+            <p className="text-lg sm:text-xl font-bold text-slate-900">{stats.low}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
           <select
-            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
             value={lineNameFilter}
             onChange={(e) => setLineNameFilter(e.target.value as LineName | '')}
           >
@@ -225,7 +229,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
           </select>
 
           <select
-            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as Category | '')}
           >
@@ -236,7 +240,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
           </select>
 
           <select
-            className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+            className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
             value={riskLevelFilter}
             onChange={(e) => setRiskLevelFilter(e.target.value as RiskLevel | '')}
           >
@@ -261,31 +265,31 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate h-[90vh]">
-        <div className="overflow-auto h-full">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate h-[65vh] sm:h-[75vh] md:h-[85vh]">
+        <div className="overflow-auto h-full [-webkit-overflow-scrolling:touch]">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs font-semibold text-white uppercase bg-blue-600 sticky top-0 z-10">
               <tr>
-                <th scope="col" className="px-6 py-4">No</th>
-                <th scope="col" className="px-6 py-4">Line Name</th>
-                <th scope="col" className="px-6 py-4">Date Start</th>
-                <th scope="col" className="px-6 py-4">Date Finish</th>
-                <th scope="col" className="px-6 py-4">Category</th>
-                <th scope="col" className="px-6 py-4 max-w-[220px]">Henkaten</th>
-                <th scope="col" className="px-6 py-4 text-center">Risk Level</th>
-                <th scope="col" className="px-6 py-4 max-w-[220px]">Tujuan Henkaten</th>
-                <th scope="col" className="px-6 py-4">PIC Name</th>
-                <th scope="col" className="px-6 py-4">Departemen</th>
-                <th scope="col" className="px-6 py-4 text-center">Photo</th>
-                <th scope="col" className="px-6 py-4">Created By</th>
-                <th scope="col" className="px-6 py-4">Created At</th>
-                <th scope="col" className="px-6 py-4 text-center">Action</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">No</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Line Name</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Date Start</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Date Finish</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Category</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 max-w-[220px]">Henkaten</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Risk Level</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 max-w-[220px]">Tujuan Henkaten</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">PIC Name</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Departemen</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Photo</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created By</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created At</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={14} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={14} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center space-x-2">
                        <Loader2 className="animate-spin text-navy-900" size={24} />
                        <span>Memuat data dari database...</span>
@@ -294,7 +298,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={14} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     Tidak ada data ditemukan.
                   </td>
                 </tr>
@@ -307,19 +311,19 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                       index % 2 === 0 ? 'bg-white' : 'bg-blue-50'
                     }`}
                   >
-                    <td className="px-6 py-4 font-medium text-slate-900">{index + 1}</td>
-                    <td className="px-6 py-4">{record.lineName}</td>
-                    <td className="px-6 py-4">{format(new Date(record.dateStart), 'dd MMM yyyy')}</td>
-                    <td className="px-6 py-4">{record.dateFinish ? format(new Date(record.dateFinish), 'dd MMM yyyy') : '-'}</td>
-                    <td className="px-6 py-4">{record.category}</td>
-                    <td className="px-6 py-4 max-w-[220px] truncate" title={record.henkatenInfo}>{record.henkatenInfo}</td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900">{index + 1}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.lineName}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{format(new Date(record.dateStart), 'dd MMM yyyy')}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.dateFinish ? format(new Date(record.dateFinish), 'dd MMM yyyy') : '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.category}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 max-w-[220px] truncate" title={record.henkatenInfo}>{record.henkatenInfo}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                       {getRiskBadge(record.riskLevel)}
                     </td>
-                    <td className="px-6 py-4 max-w-[220px] truncate" title={record.tujuanHenkaten}>{record.tujuanHenkaten}</td>
-                    <td className="px-6 py-4">{record.picName}</td>
-                    <td className="px-6 py-4">{record.departemen}</td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 max-w-[220px] truncate" title={record.tujuanHenkaten}>{record.tujuanHenkaten}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.picName}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.departemen}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                       {record.photo ? (
                         <div className="flex justify-center">
                           <img src={record.photo} alt="Henkaten" className="w-10 h-10 object-cover rounded-md shadow-sm border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity" title="Lihat Foto" />
@@ -328,9 +332,9 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">{record.createdBy}</td>
-                    <td className="px-6 py-4">{format(new Date(record.createdAt), 'dd MMM yyyy HH:mm')}</td>
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{record.createdBy}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">{format(new Date(record.createdAt), 'dd MMM yyyy HH:mm')}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <button onClick={() => handleDelete(record.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                           <Trash2 size={16} className="opacity-60" />
@@ -354,8 +358,8 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
             className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-blue-600 text-white rounded-t-xl">
-              <h3 className="text-lg font-semibold">Detail Henkaten</h3>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 sticky top-0 bg-blue-600 text-white rounded-t-xl">
+              <h3 className="text-base sm:text-lg font-semibold">Detail Henkaten</h3>
               <button
                 onClick={() => setSelectedRecord(null)}
                 className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -365,7 +369,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-medium text-slate-500 uppercase mb-1">Line Name</p>
@@ -424,7 +428,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+            <div className="flex flex-wrap items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
               <button
                 onClick={() => handlePrint(selectedRecord)}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"

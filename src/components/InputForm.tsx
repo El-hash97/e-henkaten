@@ -207,7 +207,7 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
             onChange={handlePhotoUpload} 
           />
           
-          <div className="mt-2 flex items-center space-x-4">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -237,10 +237,10 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
           )}
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isSaving}
-          className="mt-6 bg-green-600 text-white font-medium py-3 px-6 rounded-lg float-left hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:ring-4 focus:ring-green-600/30 flex items-center space-x-2 disabled:opacity-75 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+          className="mt-6 w-full sm:w-auto justify-center bg-green-600 text-white font-medium py-3 px-6 rounded-lg sm:float-left hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:ring-4 focus:ring-green-600/30 flex items-center space-x-2 disabled:opacity-75 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
         >
           <span>{isSaving ? 'Menyimpan...' : (editingRecordId ? 'Update Data' : 'Simpan Data')}</span>
           {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
