@@ -17,6 +17,8 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
   const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
   const [riskLevelFilter, setRiskLevelFilter] = useState<RiskLevel | ''>('');
+  const [dateStartFilter, setDateStartFilter] = useState('');
+  const [dateFinishFilter, setDateFinishFilter] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<HenkatenRecord | null>(null);
 
   const filteredRecords = useMemo(() => {
@@ -33,9 +35,11 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
       const matchesLineName = !lineNameFilter || r.lineName === lineNameFilter;
       const matchesCategory = !categoryFilter || r.category === categoryFilter;
       const matchesRiskLevel = !riskLevelFilter || r.riskLevel === riskLevelFilter;
-      return matchesSearch && matchesLineName && matchesCategory && matchesRiskLevel;
+      const matchesDateStart = !dateStartFilter || r.dateStart >= dateStartFilter;
+      const matchesDateFinish = !dateFinishFilter || r.dateStart <= dateFinishFilter;
+      return matchesSearch && matchesLineName && matchesCategory && matchesRiskLevel && matchesDateStart && matchesDateFinish;
     });
-  }, [records, searchTerm, lineNameFilter, categoryFilter, riskLevelFilter]);
+  }, [records, searchTerm, lineNameFilter, categoryFilter, riskLevelFilter, dateStartFilter, dateFinishFilter]);
 
   const stats = useMemo(() => {
     const total = filteredRecords.length;
@@ -145,6 +149,35 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
     toast.success('PDF berhasil diekspor');
   };
 
+  const handleExportSinglePDF = (record: HenkatenRecord) => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    doc.setFontSize(14);
+    doc.text('Detail Henkaten', 14, 15);
+    doc.setFontSize(9);
+    doc.text(`Diekspor pada ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 21);
+
+    autoTable(doc, {
+      startY: 26,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [37, 99, 235] },
+      theme: 'grid',
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+      body: [
+        ['Line Name', record.lineName],
+        ['Date', `${format(new Date(record.dateStart), 'dd MMM yyyy')} - ${record.dateFinish ? format(new Date(record.dateFinish), 'dd MMM yyyy') : 'N/A'}`],
+        ['Category', record.category],
+        ['Henkaten', record.henkatenInfo],
+        ['Risk Level', record.riskLevel],
+        ['Tujuan Henkaten', record.tujuanHenkaten],
+        ['PIC Name', `${record.picName} (${record.departemen})`],
+        ['Created By', `${record.createdBy} on ${format(new Date(record.createdAt), 'dd MMM yyyy HH:mm')}`],
+      ],
+    });
+
+    doc.save(`henkaten_${record.id}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`);
+    toast.success('PDF berhasil diekspor');
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
       try {
@@ -216,7 +249,31 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
       </div>
 
       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col gap-1 w-full sm:w-auto">
+              <label htmlFor="dateStartFilter" className="text-[11px] font-medium text-slate-500">Date Start</label>
+              <input
+                id="dateStartFilter"
+                type="date"
+                className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+                value={dateStartFilter}
+                onChange={(e) => setDateStartFilter(e.target.value)}
+              />
+            </div>
+            <span className="text-slate-400 text-sm shrink-0 mt-5">-</span>
+            <div className="flex flex-col gap-1 w-full sm:w-auto">
+              <label htmlFor="dateFinishFilter" className="text-[11px] font-medium text-slate-500">Date Finish</label>
+              <input
+                id="dateFinishFilter"
+                type="date"
+                className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
+                value={dateFinishFilter}
+                onChange={(e) => setDateFinishFilter(e.target.value)}
+              />
+            </div>
+          </div>
+
           <select
             className="w-full sm:w-auto border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm bg-white"
             value={lineNameFilter}
@@ -372,48 +429,48 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
             <div className="p-4 sm:p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Line Name</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Line Name</p>
                   <p className="text-sm text-slate-900">{selectedRecord.lineName}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Category</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Category</p>
                   <p className="text-sm text-slate-900">{selectedRecord.category}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Date Start</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Date Start</p>
                   <p className="text-sm text-slate-900">{format(new Date(selectedRecord.dateStart), 'dd MMM yyyy')}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Date Finish</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Date Finish</p>
                   <p className="text-sm text-slate-900">{selectedRecord.dateFinish ? format(new Date(selectedRecord.dateFinish), 'dd MMM yyyy') : '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">PIC Name</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">PIC Name</p>
                   <p className="text-sm text-slate-900">{selectedRecord.picName}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Departemen</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Departemen</p>
                   <p className="text-sm text-slate-900">{selectedRecord.departemen}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Risk Level</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Risk Level</p>
                   {getRiskBadge(selectedRecord.riskLevel)}
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Henkaten</p>
+                <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Henkaten</p>
                 <p className="text-sm text-slate-900 whitespace-pre-wrap">{selectedRecord.henkatenInfo}</p>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Tujuan Henkaten</p>
+                <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Tujuan Henkaten</p>
                 <p className="text-sm text-slate-900 whitespace-pre-wrap">{selectedRecord.tujuanHenkaten}</p>
               </div>
 
               {selectedRecord.photo && (
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase mb-1">Photo</p>
+                  <p className="text-xs font-bold underline text-slate-500 uppercase mb-1">Photo</p>
                   <img
                     src={selectedRecord.photo}
                     alt="Henkaten"
@@ -429,6 +486,13 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+              <button
+                onClick={() => handleExportSinglePDF(selectedRecord)}
+                className="flex items-center justify-center p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Download PDF"
+              >
+                <FileDown size={16} />
+              </button>
               <button
                 onClick={() => handlePrint(selectedRecord)}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
