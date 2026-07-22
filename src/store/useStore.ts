@@ -10,6 +10,7 @@ interface AppState {
   addRecord: (record: Omit<HenkatenRecord, 'id' | 'createdAt' | 'photo'>, photoFile?: File | null) => Promise<void>;
   updateRecord: (id: string, record: Partial<HenkatenRecord>, newPhotoFile?: File | null) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
+  uploadTrialDocument: (id: string, file: File) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -39,6 +40,8 @@ export const useStore = create<AppState>((set, get) => ({
         picName: d.pic_name,
         departemen: d.departemen,
         photo: d.photo,
+        trialDocument: d.trial_document,
+        trialDocumentName: d.trial_document_name,
         createdBy: d.created_by,
         createdAt: d.created_at,
       }));
@@ -143,6 +146,31 @@ export const useStore = create<AppState>((set, get) => ({
         
       if (error) throw error;
       set((state) => ({ records: state.records.filter((r) => r.id !== id) }));
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
+
+  uploadTrialDocument: async (id, file) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('henkaten_trial_docs')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('henkaten_trial_docs')
+        .getPublicUrl(filePath);
+
+      const { error } = await supabase
+        .from('henkaten_records')
+        .update({ trial_document: publicUrl, trial_document_name: file.name })
+        .eq('id', id);
+
+      if (error) throw error;
+      await get().fetchRecords();
     } catch (err: any) {
       throw new Error(err.message);
     }

@@ -15,6 +15,8 @@ export interface HenkatenRecord {
   picName: string;
   departemen: Departemen | '';
   photo: string | null; // base64 string
+  trialDocument: string | null;
+  trialDocumentName: string | null;
   createdBy: string;
   createdAt: string;
 }

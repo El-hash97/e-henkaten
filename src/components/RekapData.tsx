@@ -1,18 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
-import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown } from 'lucide-react';
+import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown, Upload, FileText, RefreshCw } from 'lucide-react';
 import type { RiskLevel, HenkatenRecord, LineName, Category } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+const TRIAL_DOC_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx';
+const TRIAL_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
 const LINE_NAME_OPTIONS: LineName[] = ['Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing'];
 const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
 const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
 export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
-  const { records, deleteRecord, isLoading } = useStore();
+  const { records, deleteRecord, isLoading, uploadTrialDocument } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
@@ -20,6 +23,8 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
   const [dateStartFilter, setDateStartFilter] = useState('');
   const [dateFinishFilter, setDateFinishFilter] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<HenkatenRecord | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const trialDocInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const filteredRecords = useMemo(() => {
     const lower = searchTerm.toLowerCase();
@@ -176,6 +181,28 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
 
     doc.save(`henkaten_${record.id}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`);
     toast.success('PDF berhasil diekspor');
+  };
+
+  const handleTrialDocChange = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!TRIAL_DOC_EXTENSIONS.includes(ext)) {
+      toast.error('Tipe file tidak didukung. Gunakan PDF, Word, atau Excel.');
+      return;
+    }
+
+    setUploadingId(id);
+    try {
+      await uploadTrialDocument(id, file);
+      toast.success('Dokumen trial berhasil diupload');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengupload dokumen trial');
+    } finally {
+      setUploadingId(null);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -340,13 +367,14 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Photo</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created By</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created At</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Upload Data Trial</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={14} className="px-3 sm:px-6 py-12 text-center text-slate-500">
+                  <td colSpan={15} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center space-x-2">
                        <Loader2 className="animate-spin text-navy-900" size={24} />
                        <span>Memuat data dari database...</span>
@@ -355,7 +383,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-3 sm:px-6 py-12 text-center text-slate-500">
+                  <td colSpan={15} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     Tidak ada data ditemukan.
                   </td>
                 </tr>
@@ -391,6 +419,49 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">{record.createdBy}</td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">{format(new Date(record.createdAt), 'dd MMM yyyy HH:mm')}</td>
+                    <td className="p-0" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        ref={(el) => { trialDocInputRefs.current[record.id] = el; }}
+                        type="file"
+                        accept={TRIAL_DOC_ACCEPT}
+                        className="hidden"
+                        onChange={(e) => handleTrialDocChange(record.id, e)}
+                      />
+                      {uploadingId === record.id ? (
+                        <div className="w-full h-full min-h-[52px] flex items-center justify-center px-3 sm:px-6 py-3 sm:py-4">
+                          <Loader2 className="animate-spin text-navy-900" size={18} />
+                        </div>
+                      ) : record.trialDocument ? (
+                        <div className="w-full h-full min-h-[52px] flex items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4">
+                          <a
+                            href={record.trialDocument}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-blue-600 hover:underline truncate max-w-[140px]"
+                            title={record.trialDocumentName || 'Buka dokumen'}
+                          >
+                            <FileText size={14} className="shrink-0" />
+                            <span className="truncate">{record.trialDocumentName || 'Dokumen'}</span>
+                          </a>
+                          <button
+                            onClick={() => trialDocInputRefs.current[record.id]?.click()}
+                            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                            title="Ganti dokumen"
+                          >
+                            <RefreshCw size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => trialDocInputRefs.current[record.id]?.click()}
+                          className="w-full h-full min-h-[52px] flex items-center justify-center gap-1.5 px-3 sm:px-6 py-3 sm:py-4 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          title="Upload dokumen trial"
+                        >
+                          <Upload size={16} />
+                          <span className="text-xs font-medium">Upload</span>
+                        </button>
+                      )}
+                    </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <button onClick={() => handleDelete(record.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
