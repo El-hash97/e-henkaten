@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
-import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown, Upload, FileText, RefreshCw } from 'lucide-react';
+import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown, Upload, FileText, RefreshCw, Eye, Download } from 'lucide-react';
 import type { RiskLevel, HenkatenRecord, LineName, Category } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -15,7 +15,7 @@ const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
 const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
 export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
-  const { records, deleteRecord, isLoading, uploadTrialDocument } = useStore();
+  const { records, deleteRecord, isLoading, uploadTrialDocument, deleteTrialDocument } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
@@ -24,6 +24,9 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
   const [dateFinishFilter, setDateFinishFilter] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<HenkatenRecord | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [confirmDeleteDocId, setConfirmDeleteDocId] = useState<string | null>(null);
+  const [trialDocPreview, setTrialDocPreview] = useState<{ url: string; name: string } | null>(null);
   const trialDocInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const filteredRecords = useMemo(() => {
@@ -202,6 +205,36 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
       toast.error(err.message || 'Gagal mengupload dokumen trial');
     } finally {
       setUploadingId(null);
+    }
+  };
+
+  const handleDeleteTrialDoc = async (id: string) => {
+    setConfirmDeleteDocId(null);
+    setDeletingDocId(id);
+    try {
+      await deleteTrialDocument(id);
+      toast.success('Dokumen trial berhasil dihapus');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menghapus dokumen trial');
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  const handleDownloadTrialDoc = async (url: string, name: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error('Gagal mengunduh dokumen');
     }
   };
 
@@ -432,24 +465,32 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                           <Loader2 className="animate-spin text-navy-900" size={18} />
                         </div>
                       ) : record.trialDocument ? (
-                        <div className="w-full h-full min-h-[52px] flex items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4">
-                          <a
-                            href={record.trialDocument}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-blue-600 hover:underline truncate max-w-[140px]"
+                        <div className="w-full h-full min-h-[52px] flex items-center justify-between gap-1 px-3 sm:px-6 py-3 sm:py-4">
+                          <button
+                            onClick={() => setTrialDocPreview({ url: record.trialDocument!, name: record.trialDocumentName || 'Dokumen' })}
+                            className="flex items-center gap-1.5 text-blue-600 hover:underline truncate max-w-[110px]"
                             title={record.trialDocumentName || 'Buka dokumen'}
                           >
                             <FileText size={14} className="shrink-0" />
                             <span className="truncate">{record.trialDocumentName || 'Dokumen'}</span>
-                          </a>
-                          <button
-                            onClick={() => trialDocInputRefs.current[record.id]?.click()}
-                            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-                            title="Ganti dokumen"
-                          >
-                            <RefreshCw size={14} />
                           </button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              onClick={() => trialDocInputRefs.current[record.id]?.click()}
+                              className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="Ganti dokumen"
+                            >
+                              <RefreshCw size={14} />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteDocId(record.id)}
+                              disabled={deletingDocId === record.id}
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Hapus dokumen"
+                            >
+                              {deletingDocId === record.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button
@@ -578,6 +619,90 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 <Edit2 size={16} /> Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {trialDocPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setTrialDocPreview(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-blue-600 text-white rounded-t-xl">
+              <h3 className="text-base sm:text-lg font-semibold">Dokumen Trial</h3>
+              <button
+                onClick={() => setTrialDocPreview(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                title="Tutup"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <FileText size={16} className="shrink-0 text-slate-500" />
+                <span className="truncate">{trialDocPreview.name}</span>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <a
+                  href={trialDocPreview.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  <Eye size={16} /> Lihat Dokumen
+                </a>
+                <button
+                  onClick={() => handleDownloadTrialDoc(trialDocPreview.url, trialDocPreview.name)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-navy-900 hover:bg-navy-800 rounded-lg transition-colors"
+                >
+                  <Download size={16} /> Download Dokumen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteDocId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setConfirmDeleteDocId(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 shrink-0 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Hapus Dokumen Trial</h3>
+                <p className="text-sm text-slate-500 mt-1">Apakah Anda yakin ingin menghapus dokumen trial ini?</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 mt-5">
+              <button
+                onClick={() => setConfirmDeleteDocId(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => handleDeleteTrialDoc(confirmDeleteDocId)}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Hapus
               </button>
             </div>
           </div>

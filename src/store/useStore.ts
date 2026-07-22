@@ -11,6 +11,7 @@ interface AppState {
   updateRecord: (id: string, record: Partial<HenkatenRecord>, newPhotoFile?: File | null) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
   uploadTrialDocument: (id: string, file: File) => Promise<void>;
+  deleteTrialDocument: (id: string) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -167,6 +168,20 @@ export const useStore = create<AppState>((set, get) => ({
       const { error } = await supabase
         .from('henkaten_records')
         .update({ trial_document: publicUrl, trial_document_name: file.name })
+        .eq('id', id);
+
+      if (error) throw error;
+      await get().fetchRecords();
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
+
+  deleteTrialDocument: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('henkaten_records')
+        .update({ trial_document: null, trial_document_name: null })
         .eq('id', id);
 
       if (error) throw error;
