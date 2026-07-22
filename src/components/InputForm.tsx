@@ -110,6 +110,8 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
             <option value="Mould-RCS">Mould-RCS</option>
             <option value="Core Making">Core Making</option>
             <option value="Finishing">Finishing</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Die Maintenance">Die Maintenance</option>
           </select>
           {errors.lineName && <span className="text-xs text-red-500 mt-1">Line Name wajib diisi</span>}
         </div>

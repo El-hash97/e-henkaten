@@ -1,6 +1,6 @@
 export type RiskLevel = 'Low' | 'Medium' | 'High';
 export type Category = 'Methode' | 'Material' | 'Man' | 'Machine';
-export type LineName = 'Mel-Pour-Analys' | 'Mould-RCS' | 'Core Making' | 'Finishing';
+export type LineName = 'Mel-Pour-Analys' | 'Mould-RCS' | 'Core Making' | 'Finishing' | 'Maintenance' | 'Die Maintenance';
 export type Departemen = 'Production' | 'Engineering' | 'Maintenance' | 'Die Maintenance';
 
 export interface HenkatenRecord {
