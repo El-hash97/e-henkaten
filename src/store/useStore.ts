@@ -43,6 +43,7 @@ export const useStore = create<AppState>((set, get) => ({
         photo: d.photo,
         trialDocument: d.trial_document,
         trialDocumentName: d.trial_document_name,
+        keterangan: d.keterangan,
         createdBy: d.created_by,
         createdAt: d.created_at,
       }));
@@ -108,6 +109,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (updatedRecord.picName !== undefined) dbRecord.pic_name = updatedRecord.picName;
       if (updatedRecord.departemen !== undefined) dbRecord.departemen = updatedRecord.departemen;
       if (updatedRecord.createdBy !== undefined) dbRecord.created_by = updatedRecord.createdBy;
+      if (updatedRecord.keterangan !== undefined) dbRecord.keterangan = updatedRecord.keterangan;
 
       // Handle photo update
       if (newPhotoFile) {

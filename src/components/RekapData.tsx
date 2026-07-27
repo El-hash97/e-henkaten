@@ -15,7 +15,7 @@ const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
 const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
 export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
-  const { records, deleteRecord, isLoading, uploadTrialDocument, deleteTrialDocument } = useStore();
+  const { records, deleteRecord, isLoading, uploadTrialDocument, deleteTrialDocument, updateRecord } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
@@ -238,6 +238,15 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
     }
   };
 
+  const handleKeteranganSave = async (id: string, value: string, previous: string | null) => {
+    if (value === (previous ?? '')) return;
+    try {
+      await updateRecord(id, { keterangan: value });
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menyimpan keterangan');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
       try {
@@ -401,13 +410,14 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created By</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Created At</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Upload Data Trial</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Keterangan</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={15} className="px-3 sm:px-6 py-12 text-center text-slate-500">
+                  <td colSpan={16} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center space-x-2">
                        <Loader2 className="animate-spin text-navy-900" size={24} />
                        <span>Memuat data dari database...</span>
@@ -416,7 +426,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-3 sm:px-6 py-12 text-center text-slate-500">
+                  <td colSpan={16} className="px-3 sm:px-6 py-12 text-center text-slate-500">
                     Tidak ada data ditemukan.
                   </td>
                 </tr>
@@ -502,6 +512,16 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
                           <span className="text-xs font-medium">Upload</span>
                         </button>
                       )}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        key={`${record.id}-${record.keterangan ?? ''}`}
+                        type="text"
+                        defaultValue={record.keterangan ?? ''}
+                        placeholder="Tambahkan keterangan..."
+                        className="w-full min-w-[160px] border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors bg-white"
+                        onBlur={(e) => handleKeteranganSave(record.id, e.target.value, record.keterangan)}
+                      />
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
