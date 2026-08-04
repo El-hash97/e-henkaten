@@ -10,7 +10,7 @@ type DeleteTarget = { kind: 'line' | 'department'; id: string; name: string };
 
 export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const {
-    customLineNames, customDepartments,
+    customLineNames, customDepartments, records,
     addLineName, deleteLineName, addDepartment, deleteDepartment,
   } = useStore();
 
@@ -36,7 +36,11 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-    if (adminPassword && password === adminPassword) {
+    if (!adminPassword) {
+      toast.error('Admin password belum dikonfigurasi. Hubungi developer.');
+      return;
+    }
+    if (password === adminPassword) {
       sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
       setStage('manage');
     } else {
@@ -178,7 +182,7 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       {deleteTarget && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
-          onClick={() => setDeleteTarget(null)}
+          onClick={(e) => { e.stopPropagation(); setDeleteTarget(null); }}
         >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start gap-3">
@@ -188,6 +192,17 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Hapus Opsi</h3>
                 <p className="text-sm text-slate-500 mt-1">Apakah Anda yakin ingin menghapus "{deleteTarget.name}"?</p>
+                {(() => {
+                  const usageCount = records.filter((r) =>
+                    deleteTarget.kind === 'line' ? r.lineName === deleteTarget.name : r.departemen === deleteTarget.name
+                  ).length;
+                  return usageCount > 0 ? (
+                    <p className="text-sm text-amber-600 mt-2 flex items-start gap-1.5">
+                      <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                      <span>{usageCount} data Henkaten masih menggunakan opsi ini. Menghapusnya bisa membuat data tersebut tidak lengkap saat diedit.</span>
+                    </p>
+                  ) : null;
+                })()}
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 mt-5">

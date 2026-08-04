@@ -222,6 +222,7 @@ export const useStore = create<AppState>((set, get) => ({
         customDepartments: departmentsRes.data ?? [],
       });
     } catch (err: any) {
+      console.error(err);
       set({ error: err.message });
     }
   },
