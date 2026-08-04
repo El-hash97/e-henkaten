@@ -10,7 +10,7 @@ import autoTable from 'jspdf-autotable';
 const TRIAL_DOC_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx';
 const TRIAL_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
-const LINE_NAME_OPTIONS: LineName[] = ['Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing'];
+const LINE_NAME_OPTIONS: LineName[] = ['Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing', 'Maintenance', 'Die Maintenance'];
 const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
 const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
@@ -391,10 +391,10 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate h-[65vh] sm:h-[75vh] md:h-[85vh]">
-        <div className="overflow-auto h-full [-webkit-overflow-scrolling:touch]">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate">
+        <div className={`[-webkit-overflow-scrolling:touch] ${lineNameFilter ? '' : 'overflow-auto max-h-[36rem]'}`}>
           <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="text-xs font-semibold text-white uppercase bg-blue-600 sticky top-0 z-10">
+            <thead className={`text-xs font-semibold text-white uppercase bg-blue-600 z-10 ${lineNameFilter ? '' : 'sticky top-0'}`}>
               <tr>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">No</th>
                 <th scope="col" className="px-3 sm:px-6 py-3 sm:py-4">Line Name</th>
