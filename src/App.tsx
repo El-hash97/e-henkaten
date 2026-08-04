@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { InputForm } from './components/InputForm';
 import { RekapData } from './components/RekapData';
+import { SettingsModal } from './components/SettingsModal';
 import { clsx } from 'clsx';
 import { Toaster } from 'react-hot-toast';
 
@@ -12,12 +13,15 @@ type Tab = 'input' | 'rekap';
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('input');
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
-  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   const fetchRecords = useStore((state) => state.fetchRecords);
-  
+  const fetchOptions = useStore((state) => state.fetchOptions);
+
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+    fetchOptions();
+  }, [fetchRecords, fetchOptions]);
 
   const handleEdit = (id: string) => {
     setEditingRecordId(id);
@@ -32,7 +36,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
       <Toaster position="top-right" />
-      <Navbar />
+      <Navbar onOpenSettings={() => setIsSettingsOpen(true)} />
       
       <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
 
@@ -71,6 +75,7 @@ function App() {
       </main>
 
       <Footer />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }
