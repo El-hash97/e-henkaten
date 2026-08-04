@@ -397,7 +397,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative isolate">
-        <div className={`[-webkit-overflow-scrolling:touch] ${lineNameFilter ? '' : 'overflow-auto max-h-[36rem]'}`}>
+        <div className={`[-webkit-overflow-scrolling:touch] ${lineNameFilter ? 'overflow-x-auto' : 'overflow-auto max-h-[52rem]'}`}>
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className={`text-xs font-semibold text-white uppercase bg-blue-600 z-10 ${lineNameFilter ? '' : 'sticky top-0'}`}>
               <tr>
