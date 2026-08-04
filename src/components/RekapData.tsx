@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown, Upload, FileText, RefreshCw, Eye, Download } from 'lucide-react';
 import type { RiskLevel, HenkatenRecord, LineName, Category } from '../types';
+import { DEFAULT_LINE_NAME_OPTIONS } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -10,12 +11,11 @@ import autoTable from 'jspdf-autotable';
 const TRIAL_DOC_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx';
 const TRIAL_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
-const LINE_NAME_OPTIONS: LineName[] = ['Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing', 'Maintenance', 'Die Maintenance'];
 const CATEGORY_OPTIONS: Category[] = ['Methode', 'Material', 'Man', 'Machine'];
 const RISK_LEVEL_OPTIONS: RiskLevel[] = ['Low', 'Medium', 'High'];
 
 export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
-  const { records, deleteRecord, isLoading, uploadTrialDocument, deleteTrialDocument, updateRecord } = useStore();
+  const { records, deleteRecord, isLoading, uploadTrialDocument, deleteTrialDocument, updateRecord, customLineNames } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [lineNameFilter, setLineNameFilter] = useState<LineName | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
@@ -56,6 +56,11 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
     const low = filteredRecords.filter((r) => r.riskLevel === 'Low').length;
     return { total, high, medium, low };
   }, [filteredRecords]);
+
+  const lineNameOptions = useMemo(
+    () => [...DEFAULT_LINE_NAME_OPTIONS, ...customLineNames.map((c) => c.name)],
+    [customLineNames]
+  );
 
   const getRiskBadge = (level: RiskLevel | '') => {
     switch (level) {
@@ -349,7 +354,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
             onChange={(e) => setLineNameFilter(e.target.value as LineName | '')}
           >
             <option value="">Semua Line Name</option>
-            {LINE_NAME_OPTIONS.map((option) => (
+            {lineNameOptions.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
           </select>

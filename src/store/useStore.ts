@@ -2,22 +2,36 @@ import { create } from 'zustand';
 import type { HenkatenRecord } from '../types';
 import { supabase } from '../lib/supabase';
 
+interface CustomOption {
+  id: string;
+  name: string;
+}
+
 interface AppState {
   records: HenkatenRecord[];
   isLoading: boolean;
   error: string | null;
+  customLineNames: CustomOption[];
+  customDepartments: CustomOption[];
   fetchRecords: () => Promise<void>;
   addRecord: (record: Omit<HenkatenRecord, 'id' | 'createdAt' | 'photo'>, photoFile?: File | null) => Promise<void>;
   updateRecord: (id: string, record: Partial<HenkatenRecord>, newPhotoFile?: File | null) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
   uploadTrialDocument: (id: string, file: File) => Promise<void>;
   deleteTrialDocument: (id: string) => Promise<void>;
+  fetchOptions: () => Promise<void>;
+  addLineName: (name: string) => Promise<void>;
+  deleteLineName: (id: string) => Promise<void>;
+  addDepartment: (name: string) => Promise<void>;
+  deleteDepartment: (id: string) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   records: [],
   isLoading: false,
   error: null,
+  customLineNames: [],
+  customDepartments: [],
   
   fetchRecords: async () => {
     set({ isLoading: true, error: null });
@@ -191,5 +205,65 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err: any) {
       throw new Error(err.message);
     }
-  }
+  },
+
+  fetchOptions: async () => {
+    try {
+      const [lineNamesRes, departmentsRes] = await Promise.all([
+        supabase.from('custom_line_names').select('id, name').order('name', { ascending: true }),
+        supabase.from('custom_departments').select('id, name').order('name', { ascending: true }),
+      ]);
+
+      if (lineNamesRes.error) throw lineNamesRes.error;
+      if (departmentsRes.error) throw departmentsRes.error;
+
+      set({
+        customLineNames: lineNamesRes.data ?? [],
+        customDepartments: departmentsRes.data ?? [],
+      });
+    } catch (err: any) {
+      console.error(err);
+      set({ error: err.message });
+    }
+  },
+
+  addLineName: async (name) => {
+    try {
+      const { error } = await supabase.from('custom_line_names').insert([{ name }]);
+      if (error) throw error;
+      await get().fetchOptions();
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
+
+  deleteLineName: async (id) => {
+    try {
+      const { error } = await supabase.from('custom_line_names').delete().eq('id', id);
+      if (error) throw error;
+      set((state) => ({ customLineNames: state.customLineNames.filter((c) => c.id !== id) }));
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
+
+  addDepartment: async (name) => {
+    try {
+      const { error } = await supabase.from('custom_departments').insert([{ name }]);
+      if (error) throw error;
+      await get().fetchOptions();
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
+
+  deleteDepartment: async (id) => {
+    try {
+      const { error } = await supabase.from('custom_departments').delete().eq('id', id);
+      if (error) throw error;
+      set((state) => ({ customDepartments: state.customDepartments.filter((c) => c.id !== id) }));
+    } catch (err: any) {
+      throw new Error(err.message);
+    }
+  },
 }));

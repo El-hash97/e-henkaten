@@ -1,7 +1,14 @@
 export type RiskLevel = 'Low' | 'Medium' | 'High';
 export type Category = 'Methode' | 'Material' | 'Man' | 'Machine';
-export type LineName = 'Mel-Pour-Analys' | 'Mould-RCS' | 'Core Making' | 'Finishing' | 'Maintenance' | 'Die Maintenance';
-export type Departemen = 'Production' | 'Engineering' | 'Maintenance' | 'Die Maintenance';
+export type LineName = string;
+export type Departemen = string;
+
+export const DEFAULT_LINE_NAME_OPTIONS: LineName[] = [
+  'Mel-Pour-Analys', 'Mould-RCS', 'Core Making', 'Finishing', 'Maintenance', 'Die Maintenance',
+];
+export const DEFAULT_DEPARTEMEN_OPTIONS: Departemen[] = [
+  'Production', 'Engineering', 'Maintenance', 'Die Maintenance',
+];
 
 export interface HenkatenRecord {
   id: string;
