@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import toast from 'react-hot-toast';
 import { useRef, useState, useEffect } from 'react';
 import type { HenkatenRecord } from '../types';
+import { DEFAULT_LINE_NAME_OPTIONS, DEFAULT_DEPARTEMEN_OPTIONS } from '../types';
 
 type FormData = Omit<HenkatenRecord, 'id' | 'createdAt' | 'createdBy'>;
 
@@ -11,6 +12,10 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
   const addRecord = useStore((state) => state.addRecord);
   const updateRecord = useStore((state) => state.updateRecord);
   const records = useStore((state) => state.records);
+  const customLineNames = useStore((state) => state.customLineNames);
+  const customDepartments = useStore((state) => state.customDepartments);
+  const lineNameOptions = [...DEFAULT_LINE_NAME_OPTIONS, ...customLineNames.map((c) => c.name)];
+  const departmentOptions = [...DEFAULT_DEPARTEMEN_OPTIONS, ...customDepartments.map((c) => c.name)];
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       lineName: '',
@@ -106,12 +111,9 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
           <label className={labelClass}>Line Name</label>
           <select {...register('lineName', { required: true })} className={inputClass}>
             <option value="">Pilih Line Name</option>
-            <option value="Mel-Pour-Analys">Mel-Pour-Analys</option>
-            <option value="Mould-RCS">Mould-RCS</option>
-            <option value="Core Making">Core Making</option>
-            <option value="Finishing">Finishing</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Die Maintenance">Die Maintenance</option>
+            {lineNameOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
           </select>
           {errors.lineName && <span className="text-xs text-red-500 mt-1">Line Name wajib diisi</span>}
         </div>
@@ -189,10 +191,9 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
             <label className={labelClass}>Departemen</label>
             <select {...register('departemen', { required: true })} className={inputClass}>
               <option value="">Pilih Departemen</option>
-              <option value="Production">Production</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Die Maintenance">Die Maintenance</option>
+              {departmentOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
             </select>
             {errors.departemen && <span className="text-xs text-red-500 mt-1">Departemen wajib diisi</span>}
           </div>
