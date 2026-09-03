@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { Upload, X, Check, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { compressImage } from '../lib/compressImage';
 import toast from 'react-hot-toast';
 import { useRef, useState, useEffect } from 'react';
 import type { HenkatenRecord } from '../types';
@@ -54,11 +55,12 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
     }
   }, [editingRecordId, records, reset]);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+      const compressed = await compressImage(file);
+      setPhotoFile(compressed);
+      setPhotoPreview(URL.createObjectURL(compressed));
     }
   };
 
