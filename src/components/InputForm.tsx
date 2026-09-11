@@ -5,7 +5,6 @@ import { compressImage } from '../lib/compressImage';
 import toast from 'react-hot-toast';
 import { useRef, useState, useEffect } from 'react';
 import type { HenkatenRecord } from '../types';
-import { DEFAULT_LINE_NAME_OPTIONS, DEFAULT_DEPARTEMEN_OPTIONS } from '../types';
 
 type FormData = Omit<HenkatenRecord, 'id' | 'createdAt' | 'createdBy'>;
 
@@ -15,8 +14,8 @@ export function InputForm({ onSave, editingRecordId = null }: { onSave: () => vo
   const records = useStore((state) => state.records);
   const customLineNames = useStore((state) => state.customLineNames);
   const customDepartments = useStore((state) => state.customDepartments);
-  const lineNameOptions = [...DEFAULT_LINE_NAME_OPTIONS, ...customLineNames.map((c) => c.name)];
-  const departmentOptions = [...DEFAULT_DEPARTEMEN_OPTIONS, ...customDepartments.map((c) => c.name)];
+  const lineNameOptions = customLineNames.map((c) => c.name);
+  const departmentOptions = customDepartments.map((c) => c.name);
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       lineName: '',

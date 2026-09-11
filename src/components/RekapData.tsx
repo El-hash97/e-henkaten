@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { Search, Edit2, Printer, Trash2, Loader2, ListChecks, AlertTriangle, AlertCircle, CheckCircle2, X, FileDown, Upload, FileText, RefreshCw, Eye, Download } from 'lucide-react';
 import type { RiskLevel, HenkatenRecord, LineName, Category } from '../types';
-import { DEFAULT_LINE_NAME_OPTIONS } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -58,7 +57,7 @@ export function RekapData({ onEdit }: { onEdit: (id: string) => void }) {
   }, [filteredRecords]);
 
   const lineNameOptions = useMemo(
-    () => [...DEFAULT_LINE_NAME_OPTIONS, ...customLineNames.map((c) => c.name)],
+    () => customLineNames.map((c) => c.name),
     [customLineNames]
   );
 

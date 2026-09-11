@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { X, Settings as SettingsIcon, Trash2, Plus, Loader2, AlertTriangle, Lock, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
-import { DEFAULT_LINE_NAME_OPTIONS, DEFAULT_DEPARTEMEN_OPTIONS } from '../types';
 import { useActiveTenant, getAccessToken, toAuthEmail, isValidUsername } from '../lib/auth';
 
 type DeleteTarget = { kind: 'line' | 'department'; id: string; name: string };
@@ -59,9 +58,9 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
     }
   };
 
-  const isDuplicate = (name: string, defaults: string[], custom: { name: string }[]) => {
+  const isDuplicate = (name: string, custom: { name: string }[]) => {
     const lower = name.trim().toLowerCase();
-    return defaults.some((d) => d.toLowerCase() === lower) || custom.some((c) => c.name.toLowerCase() === lower);
+    return custom.some((c) => c.name.toLowerCase() === lower);
   };
 
   const handleAddLineName = async (e: React.FormEvent) => {
@@ -71,7 +70,7 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       toast.error('Nama Line Name tidak boleh kosong.');
       return;
     }
-    if (isDuplicate(trimmed, DEFAULT_LINE_NAME_OPTIONS, customLineNames)) {
+    if (isDuplicate(trimmed, customLineNames)) {
       toast.error('Line Name tersebut sudah ada.');
       return;
     }
@@ -94,7 +93,7 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       toast.error('Nama Departemen tidak boleh kosong.');
       return;
     }
-    if (isDuplicate(trimmed, DEFAULT_DEPARTEMEN_OPTIONS, customDepartments)) {
+    if (isDuplicate(trimmed, customDepartments)) {
       toast.error('Departemen tersebut sudah ada.');
       return;
     }
@@ -187,7 +186,6 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             )}
             <OptionSection
               title="Line Name"
-              defaults={DEFAULT_LINE_NAME_OPTIONS}
               custom={customLineNames}
               newValue={newLineName}
               onNewValueChange={setNewLineName}
@@ -197,7 +195,6 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             />
             <OptionSection
               title="Departemen"
-              defaults={DEFAULT_DEPARTEMEN_OPTIONS}
               custom={customDepartments}
               newValue={newDepartment}
               onNewValueChange={setNewDepartment}
@@ -255,10 +252,9 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 }
 
 function OptionSection({
-  title, defaults, custom, newValue, onNewValueChange, onAdd, isAdding, onDelete,
+  title, custom, newValue, onNewValueChange, onAdd, isAdding, onDelete,
 }: {
   title: string;
-  defaults: string[];
   custom: { id: string; name: string }[];
   newValue: string;
   onNewValueChange: (value: string) => void;
@@ -270,12 +266,9 @@ function OptionSection({
     <div>
       <h4 className="text-sm font-bold text-slate-900 mb-2">{title}</h4>
       <div className="space-y-1.5 mb-3">
-        {defaults.map((name) => (
-          <div key={name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 text-sm text-slate-500">
-            <span>{name}</span>
-            <span className="text-[10px] uppercase font-semibold tracking-wide text-slate-400">Bawaan</span>
-          </div>
-        ))}
+        {custom.length === 0 && (
+          <p className="text-xs text-slate-400 italic px-1">Belum ada opsi, tambahkan di bawah.</p>
+        )}
         {custom.map((item) => (
           <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm text-slate-700">
             <span>{item.name}</span>
