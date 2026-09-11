@@ -3,6 +3,21 @@ import { supabase } from './supabase';
 
 export type AppRole = 'admin' | 'user';
 
+// Supabase Auth cuma punya field email, tidak ada konsep "username" asli.
+// Supaya user tidak pernah lihat/ketik format email, tiap username diubah
+// jadi email sintetis di domain internal ini sebelum dikirim ke Supabase -
+// satu-satunya tempat transformasi ini terjadi, jangan duplikasi di komponen.
+const USERNAME_DOMAIN = 'henkaten.local';
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])?$/i;
+
+export function toAuthEmail(username: string): string {
+  return `${username.trim().toLowerCase()}@${USERNAME_DOMAIN}`;
+}
+
+export function isValidUsername(username: string): boolean {
+  return USERNAME_PATTERN.test(username.trim());
+}
+
 export interface ActiveTenant {
   tenantId: string;
   role: AppRole | null;
@@ -45,8 +60,8 @@ export async function getActiveTenant(): Promise<ActiveTenant> {
   return { tenantId: await getDefaultTenantId(), role: null, isAuthenticated: false };
 }
 
-export async function login(email: string, password: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+export async function login(username: string, password: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithPassword({ email: toAuthEmail(username), password });
   if (error) throw new Error(error.message);
 }
 

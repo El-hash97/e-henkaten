@@ -3,7 +3,7 @@ import { X, Settings as SettingsIcon, Trash2, Plus, Loader2, AlertTriangle, Lock
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { DEFAULT_LINE_NAME_OPTIONS, DEFAULT_DEPARTEMEN_OPTIONS } from '../types';
-import { useActiveTenant, getAccessToken } from '../lib/auth';
+import { useActiveTenant, getAccessToken, toAuthEmail, isValidUsername } from '../lib/auth';
 
 const ADMIN_SESSION_KEY = 'henkaten_admin';
 
@@ -26,7 +26,7 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const [isAddingDept, setIsAddingDept] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
@@ -65,9 +65,13 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const email = newUserEmail.trim();
-    if (!email || !newUserPassword) {
-      toast.error('Email dan password akun baru wajib diisi.');
+    const username = newUsername.trim();
+    if (!username || !newUserPassword) {
+      toast.error('Username dan password akun baru wajib diisi.');
+      return;
+    }
+    if (!isValidUsername(username)) {
+      toast.error('Username hanya boleh huruf, angka, titik, strip, underscore (3-32 karakter).');
       return;
     }
     setIsCreatingUser(true);
@@ -77,12 +81,12 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       const res = await fetch('/.netlify/functions/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: newUserPassword, accessToken }),
+        body: JSON.stringify({ email: toAuthEmail(username), password: newUserPassword, accessToken }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || 'Gagal membuat akun.');
-      toast.success(`Akun tenant-user "${email}" berhasil dibuat.`);
-      setNewUserEmail('');
+      toast.success(`Akun tenant-user "${username}" berhasil dibuat.`);
+      setNewUsername('');
       setNewUserPassword('');
     } catch (err: any) {
       toast.error(err.message || 'Gagal membuat akun.');
@@ -213,10 +217,10 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 <p className="text-xs text-slate-500 mb-2">Akun baru otomatis masuk ke divisi Anda dan bisa langsung dipakai login.</p>
                 <form onSubmit={handleCreateUser} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
-                    type="email"
-                    placeholder="Email akun baru"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    type="text"
+                    placeholder="Username akun baru"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
                     className="flex-1 border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors"
                   />
                   <input
@@ -228,7 +232,7 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   />
                   <button
                     type="submit"
-                    disabled={isCreatingUser || !newUserEmail.trim() || !newUserPassword}
+                    disabled={isCreatingUser || !newUsername.trim() || !newUserPassword}
                     className="flex items-center justify-center gap-1.5 bg-navy-900 text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-navy-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {isCreatingUser ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}

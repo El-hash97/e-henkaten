@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { login } from '../lib/auth';
 
 export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -14,13 +14,13 @@ export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     e.preventDefault();
     setIsLoggingIn(true);
     try {
-      await login(email.trim(), password);
+      await login(username.trim(), password);
       toast.success('Berhasil login.');
-      setEmail('');
+      setUsername('');
       setPassword('');
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Login gagal. Periksa email/password.');
+      toast.error(err.message || 'Login gagal. Periksa username/password.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -42,11 +42,11 @@ export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             Login hanya diperlukan untuk divisi selain Casting. Masukkan akun divisi Anda.
           </p>
           <input
-            type="email"
+            type="text"
             autoFocus
-            placeholder="Email akun divisi"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Username akun divisi"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full border border-slate-300 rounded-lg text-sm px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors shadow-sm"
           />
           <input
@@ -58,7 +58,7 @@ export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           />
           <button
             type="submit"
-            disabled={isLoggingIn || !email || !password}
+            disabled={isLoggingIn || !username || !password}
             className="w-full flex items-center justify-center gap-2 bg-navy-900 text-white font-medium py-2.5 rounded-lg hover:bg-navy-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoggingIn ? <Loader2 size={16} className="animate-spin" /> : 'Masuk'}

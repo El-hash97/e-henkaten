@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, ShieldCheck, Lock, Loader2, Building2, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { toAuthEmail, isValidUsername } from '../lib/auth';
 
 interface Tenant {
   id: string;
@@ -30,7 +31,7 @@ export function SuperAdminModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
 
   const [adminTenantId, setAdminTenantId] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
+  const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
 
@@ -86,19 +87,23 @@ export function SuperAdminModal({ isOpen, onClose }: { isOpen: boolean; onClose:
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const email = adminEmail.trim();
-    if (!adminTenantId || !email || !adminPassword) {
-      toast.error('Tenant, email, dan password wajib diisi.');
+    const username = adminUsername.trim();
+    if (!adminTenantId || !username || !adminPassword) {
+      toast.error('Tenant, username, dan password wajib diisi.');
+      return;
+    }
+    if (!isValidUsername(username)) {
+      toast.error('Username hanya boleh huruf, angka, titik, strip, underscore (3-32 karakter).');
       return;
     }
     setIsCreatingAdmin(true);
     try {
       await callFunction('create-user', {
-        email, password: adminPassword, superAdminPassword: password,
+        email: toAuthEmail(username), password: adminPassword, superAdminPassword: password,
         tenantId: adminTenantId, role: 'admin',
       });
-      toast.success(`Akun tenant-admin "${email}" berhasil dibuat.`);
-      setAdminEmail('');
+      toast.success(`Akun tenant-admin "${username}" berhasil dibuat.`);
+      setAdminUsername('');
       setAdminPassword('');
     } catch (err: any) {
       handleAuthError(err);
@@ -203,10 +208,10 @@ export function SuperAdminModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 </select>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
-                    type="email"
-                    placeholder="Email tenant-admin"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
+                    type="text"
+                    placeholder="Username tenant-admin"
+                    value={adminUsername}
+                    onChange={(e) => setAdminUsername(e.target.value)}
                     className="flex-1 border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors"
                   />
                   <input
@@ -218,7 +223,7 @@ export function SuperAdminModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                   />
                   <button
                     type="submit"
-                    disabled={isCreatingAdmin || !adminTenantId || !adminEmail.trim() || !adminPassword}
+                    disabled={isCreatingAdmin || !adminTenantId || !adminUsername.trim() || !adminPassword}
                     className="flex items-center justify-center gap-1.5 bg-navy-900 text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-navy-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {isCreatingAdmin ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
