@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react';
-import { X, Settings as SettingsIcon, Trash2, Plus, Loader2, AlertTriangle, Lock } from 'lucide-react';
+import { X, Settings as SettingsIcon, Trash2, Plus, Loader2, AlertTriangle, Lock, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { DEFAULT_LINE_NAME_OPTIONS, DEFAULT_DEPARTEMEN_OPTIONS } from '../types';
+import { useActiveTenant, getAccessToken } from '../lib/auth';
 
 const ADMIN_SESSION_KEY = 'henkaten_admin';
 
 type DeleteTarget = { kind: 'line' | 'department'; id: string; name: string };
+type Stage = 'login' | 'manage' | 'denied';
 
 export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const {
     customLineNames, customDepartments, records,
     addLineName, deleteLineName, addDepartment, deleteDepartment,
   } = useStore();
+  const tenant = useActiveTenant();
+  const isRealAdmin = tenant?.role === 'admin';
 
-  const [stage, setStage] = useState<'login' | 'manage'>('login');
+  const [stage, setStage] = useState<Stage>('login');
   const [password, setPassword] = useState('');
   const [newLineName, setNewLineName] = useState('');
   const [newDepartment, setNewDepartment] = useState('');
@@ -22,14 +26,25 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const [isAddingDept, setIsAddingDept] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+    setPassword('');
+    if (!tenant) return; // sesi masih diresolve, tunggu render berikutnya
+    if (tenant.role === 'admin') {
+      setStage('manage'); // tenant-admin sungguhan, langsung masuk tanpa password lawas
+    } else if (tenant.isAuthenticated) {
+      setStage('denied'); // tenant-user login, bukan admin - tidak ada akses Pengaturan
+    } else {
+      // Belum login (tenant default/Casting) - masih pakai gerbang password lawas
+      // sampai Langkah 9 (Casting belum punya akun tenant-admin sungguhan).
       const alreadyAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
       setStage(alreadyAdmin ? 'manage' : 'login');
-      setPassword('');
     }
-  }, [isOpen]);
+  }, [isOpen, tenant]);
 
   if (!isOpen) return null;
 
@@ -45,6 +60,34 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       setStage('manage');
     } else {
       toast.error('Password admin salah.');
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = newUserEmail.trim();
+    if (!email || !newUserPassword) {
+      toast.error('Email dan password akun baru wajib diisi.');
+      return;
+    }
+    setIsCreatingUser(true);
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) throw new Error('Sesi login sudah berakhir, silakan login ulang.');
+      const res = await fetch('/.netlify/functions/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: newUserPassword, accessToken }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Gagal membuat akun.');
+      toast.success(`Akun tenant-user "${email}" berhasil dibuat.`);
+      setNewUserEmail('');
+      setNewUserPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal membuat akun.');
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -122,14 +165,21 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 sticky top-0 bg-blue-600 text-white rounded-t-xl">
           <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-            <SettingsIcon size={18} /> {stage === 'login' ? 'Login Admin' : 'Kelola Line Name & Departemen'}
+            <SettingsIcon size={18} /> {stage === 'login' ? 'Login Admin' : stage === 'denied' ? 'Pengaturan' : 'Kelola Line Name & Departemen'}
           </h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Tutup">
             <X size={18} />
           </button>
         </div>
 
-        {stage === 'login' ? (
+        {stage === 'denied' ? (
+          <div className="p-4 sm:p-6 flex flex-col items-center text-center gap-2 py-8">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+              <Lock size={22} />
+            </div>
+            <p className="text-sm text-slate-500">Akun Anda tidak punya akses ke Pengaturan. Hubungi tenant-admin divisi Anda.</p>
+          </div>
+        ) : stage === 'login' ? (
           <form onSubmit={handleLogin} className="p-4 sm:p-6 space-y-4">
             <div className="flex flex-col items-center text-center gap-2 py-2">
               <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
@@ -155,6 +205,38 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           </form>
         ) : (
           <div className="p-4 sm:p-6 space-y-6">
+            {isRealAdmin && (
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-1.5">
+                  <UserPlus size={15} /> Buat Akun Tenant-User
+                </h4>
+                <p className="text-xs text-slate-500 mb-2">Akun baru otomatis masuk ke divisi Anda dan bisa langsung dipakai login.</p>
+                <form onSubmit={handleCreateUser} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="email"
+                    placeholder="Email akun baru"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    className="flex-1 border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    className="flex-1 border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isCreatingUser || !newUserEmail.trim() || !newUserPassword}
+                    className="flex items-center justify-center gap-1.5 bg-navy-900 text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-navy-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {isCreatingUser ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                    Buat
+                  </button>
+                </form>
+              </div>
+            )}
             <OptionSection
               title="Line Name"
               defaults={DEFAULT_LINE_NAME_OPTIONS}

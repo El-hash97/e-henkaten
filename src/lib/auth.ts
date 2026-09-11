@@ -54,6 +54,12 @@ export async function logout(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/** Access token sesi yang sedang login, buat dikirim ke Netlify Functions (mis. create-user). null kalau belum login. */
+export async function getAccessToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
 export function onAuthChange(callback: () => void): () => void {
   const { data } = supabase.auth.onAuthStateChange(() => callback());
   return () => data.subscription.unsubscribe();
