@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { HenkatenRecord } from '../types';
 import { supabase } from '../lib/supabase';
+import { getActiveTenant } from '../lib/auth';
 
 interface CustomOption {
   id: string;
@@ -32,17 +33,19 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   customLineNames: [],
   customDepartments: [],
-  
+
   fetchRecords: async () => {
     set({ isLoading: true, error: null });
     try {
+      const { tenantId } = await getActiveTenant();
       const { data, error } = await supabase
         .from('henkaten_records')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
-      
+
       const formattedData = data.map((d: any) => ({
         id: d.id,
         lineName: d.line_name,
@@ -61,15 +64,17 @@ export const useStore = create<AppState>((set, get) => ({
         createdBy: d.created_by,
         createdAt: d.created_at,
       }));
-      
+
       set({ records: formattedData, isLoading: false });
     } catch (err: any) {
       set({ error: err.message, isLoading: false });
     }
   },
-  
+
   addRecord: async (record, photoFile) => {
     try {
+      const { tenantId } = await getActiveTenant();
+
       let photoUrl = null;
       if (photoFile) {
         const fileExt = photoFile.name.split('.').pop();
@@ -78,7 +83,7 @@ export const useStore = create<AppState>((set, get) => ({
           .from('henkaten_photos')
           .upload(filePath, photoFile);
         if (uploadError) throw uploadError;
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('henkaten_photos')
           .getPublicUrl(filePath);
@@ -86,6 +91,7 @@ export const useStore = create<AppState>((set, get) => ({
       }
 
       const dbRecord = {
+        tenant_id: tenantId,
         line_name: record.lineName,
         date_start: record.dateStart,
         date_finish: record.dateFinish,
@@ -98,20 +104,22 @@ export const useStore = create<AppState>((set, get) => ({
         photo: photoUrl,
         created_by: record.createdBy,
       };
-      
+
       const { error } = await supabase
         .from('henkaten_records')
         .insert([dbRecord]);
-        
+
       if (error) throw error;
       await get().fetchRecords();
     } catch (err: any) {
       throw new Error(err.message);
     }
   },
-  
+
   updateRecord: async (id, updatedRecord, newPhotoFile) => {
     try {
+      const { tenantId } = await getActiveTenant();
+
       const dbRecord: any = {};
       if (updatedRecord.lineName !== undefined) dbRecord.line_name = updatedRecord.lineName;
       if (updatedRecord.dateStart !== undefined) dbRecord.date_start = updatedRecord.dateStart;
@@ -133,7 +141,7 @@ export const useStore = create<AppState>((set, get) => ({
           .from('henkaten_photos')
           .upload(filePath, newPhotoFile);
         if (uploadError) throw uploadError;
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('henkaten_photos')
           .getPublicUrl(filePath);
@@ -145,22 +153,25 @@ export const useStore = create<AppState>((set, get) => ({
       const { error } = await supabase
         .from('henkaten_records')
         .update(dbRecord)
-        .eq('id', id);
-        
+        .eq('id', id)
+        .eq('tenant_id', tenantId);
+
       if (error) throw error;
       await get().fetchRecords();
     } catch (err: any) {
       throw new Error(err.message);
     }
   },
-  
+
   deleteRecord: async (id) => {
     try {
+      const { tenantId } = await getActiveTenant();
       const { error } = await supabase
         .from('henkaten_records')
         .delete()
-        .eq('id', id);
-        
+        .eq('id', id)
+        .eq('tenant_id', tenantId);
+
       if (error) throw error;
       set((state) => ({ records: state.records.filter((r) => r.id !== id) }));
     } catch (err: any) {
@@ -170,6 +181,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   uploadTrialDocument: async (id, file) => {
     try {
+      const { tenantId } = await getActiveTenant();
+
       const fileExt = file.name.split('.').pop();
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
@@ -184,7 +197,8 @@ export const useStore = create<AppState>((set, get) => ({
       const { error } = await supabase
         .from('henkaten_records')
         .update({ trial_document: publicUrl, trial_document_name: file.name })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('tenant_id', tenantId);
 
       if (error) throw error;
       await get().fetchRecords();
@@ -195,10 +209,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteTrialDocument: async (id) => {
     try {
+      const { tenantId } = await getActiveTenant();
       const { error } = await supabase
         .from('henkaten_records')
         .update({ trial_document: null, trial_document_name: null })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('tenant_id', tenantId);
 
       if (error) throw error;
       await get().fetchRecords();
@@ -209,9 +225,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchOptions: async () => {
     try {
+      const { tenantId } = await getActiveTenant();
       const [lineNamesRes, departmentsRes] = await Promise.all([
-        supabase.from('custom_line_names').select('id, name').order('name', { ascending: true }),
-        supabase.from('custom_departments').select('id, name').order('name', { ascending: true }),
+        supabase.from('custom_line_names').select('id, name').eq('tenant_id', tenantId).order('name', { ascending: true }),
+        supabase.from('custom_departments').select('id, name').eq('tenant_id', tenantId).order('name', { ascending: true }),
       ]);
 
       if (lineNamesRes.error) throw lineNamesRes.error;
@@ -229,7 +246,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   addLineName: async (name) => {
     try {
-      const { error } = await supabase.from('custom_line_names').insert([{ name }]);
+      const { tenantId } = await getActiveTenant();
+      const { error } = await supabase.from('custom_line_names').insert([{ name, tenant_id: tenantId }]);
       if (error) throw error;
       await get().fetchOptions();
     } catch (err: any) {
@@ -239,7 +257,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteLineName: async (id) => {
     try {
-      const { error } = await supabase.from('custom_line_names').delete().eq('id', id);
+      const { tenantId } = await getActiveTenant();
+      const { error } = await supabase.from('custom_line_names').delete().eq('id', id).eq('tenant_id', tenantId);
       if (error) throw error;
       set((state) => ({ customLineNames: state.customLineNames.filter((c) => c.id !== id) }));
     } catch (err: any) {
@@ -249,7 +268,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   addDepartment: async (name) => {
     try {
-      const { error } = await supabase.from('custom_departments').insert([{ name }]);
+      const { tenantId } = await getActiveTenant();
+      const { error } = await supabase.from('custom_departments').insert([{ name, tenant_id: tenantId }]);
       if (error) throw error;
       await get().fetchOptions();
     } catch (err: any) {
@@ -259,7 +279,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteDepartment: async (id) => {
     try {
-      const { error } = await supabase.from('custom_departments').delete().eq('id', id);
+      const { tenantId } = await getActiveTenant();
+      const { error } = await supabase.from('custom_departments').delete().eq('id', id).eq('tenant_id', tenantId);
       if (error) throw error;
       set((state) => ({ customDepartments: state.customDepartments.filter((c) => c.id !== id) }));
     } catch (err: any) {
