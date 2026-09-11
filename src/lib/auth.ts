@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
 export type AppRole = 'admin' | 'user';
@@ -56,4 +57,26 @@ export async function logout(): Promise<void> {
 export function onAuthChange(callback: () => void): () => void {
   const { data } = supabase.auth.onAuthStateChange(() => callback());
   return () => data.subscription.unsubscribe();
+}
+
+/** React hook: tenant aktif, otomatis refresh saat login/logout. */
+export function useActiveTenant(): ActiveTenant | null {
+  const [tenant, setTenant] = useState<ActiveTenant | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      getActiveTenant().then((t) => {
+        if (!cancelled) setTenant(t);
+      });
+    };
+    refresh();
+    const unsubscribe = onAuthChange(refresh);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  return tenant;
 }
